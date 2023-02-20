@@ -1,11 +1,10 @@
-running for the first time, make sure you: 
-pip install -r requirements.txt
-
+running for the first time, make sure you:
+	pip install -r requirements.txt
 to install dependencies. Feel free to add to requirements.txt if needed
 
 To run unit tests, in the terminal in venv directory:
-python test.py
-python3 test.py
+	python test.py
+	python3 test.py
 
 test.py contains unit tests to try out, keep adding unit tests if needed
 
