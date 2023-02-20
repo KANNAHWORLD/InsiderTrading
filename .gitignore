@@ -4,3 +4,4 @@ bin/**
 lib/**
 pyvenv.cfg
 filings/**
+**/.DS_Store
