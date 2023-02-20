@@ -12,7 +12,7 @@ test.py contains unit tests to try out, keep adding unit tests if needed
 
 info, so far, data_pipeline.py contains the following functions:
 
-SaveFilings(company,  filingType = FilingType.FILING_4, user_agent='QuantProj (Dumb@usc.edu)', no_filings=3)
+	SaveFilings(company,  filingType = FilingType.FILING_4, user_agent='QuantProj (Dumb@usc.edu)', no_filings=3)
 
 	company = string containing company ticker or name
 
