@@ -14,21 +14,21 @@ info, so far, data_pipeline.py contains the following functions:
 
 	SaveFilings(company,  filingType = FilingType.FILING_4, user_agent='QuantProj (Dumb@usc.edu)', no_filings=3)
 
-	company = string containing company ticker or name
+		company = string containing company ticker or name
 
-	filingType = which form to find, by default gets form 4, 
-		pass FilingType.FILING_<which filing>, 
-		options at https://sec-edgar.github.io/sec-edgar/filingtypes.html
+		filingType = which form to find, by default gets form 4, 
+			pass FilingType.FILING_<which filing>, 
+			options at https://sec-edgar.github.io/sec-edgar/filingtypes.html
 
-	user_agent = replace with '<name> (<email>)' 
-		*Necessary for secedgar access
+		user_agent = replace with '<name> (<email>)' 
+			*Necessary for secedgar access
 
-	no_filings = number of filings to retrieve, 
-		by default gets 3 filings
+		no_filings = number of filings to retrieve, 
+			by default gets 3 filings
 
-	*Overview = Retrieves filings and stores them under 
-		<program working directory>/filings/<company>/<form>
-		*usually in XML format
+		*Overview = Retrieves filings and stores them under 
+			<program working directory>/filings/<company>/<form>
+			*usually in XML format
 
 
 
