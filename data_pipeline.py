@@ -2,6 +2,7 @@ import os
 from secedgar import CompanyFilings, FilingType
 from html.parser import HTMLParser
 from lxml import etree
+import pandas as pd
 
 # this is needed to get the data
 # pip install secedgar
@@ -38,15 +39,13 @@ data = []
 
 def XML_to_CSV(XMLFileName):
 
-    # Define a list to store the data
-
     # Open the HTML file
     directory = os.getcwd()
 
     html = ''
 
     # This reads the XML file returned from EDGAR
-    with open(directory+"/filings/AMD/4/0000002488-23-000032.txt", 'r') as f:
+    with open(directory + '/' + XMLFileName, 'r') as f:
 
         # This first loop gets rid of the headers which we do not need
         for line in f:
@@ -66,13 +65,35 @@ def XML_to_CSV(XMLFileName):
 
     # Loading XML file into xml parser
     root = etree.fromstring(html)
+    
+    #Building a 2d array
+    rows = []
 
-    #Testing finding a specific element in the XML file
-    tag_elem = root.find('reportingOwner/reportingOwnerId/rptOwnerCik')
-    tag_text = tag_elem.text
+    ticker = root.find('issuer/issuerTradingSymbol').text
+    name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
+    
+    for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
+        securityTitle = transaction.find('securityTitle/value').text
+        transactionDate = transaction.find('transactionDate/value').text
+        numShares = transaction.find('transactionAmounts/transactionShares/value').text
+        price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
 
-    #Printing that shit out
-    print(tag_text)  # Output: 'Some text'
+        row = [ticker, name, securityTitle, transactionDate, numShares, price]
+        rows.append(row)
+
+    for transaction in root.findall('derivativeTable/derivativeTransaction'):
+        securityTitle = transaction.find('securityTitle/value').text
+        transactionDate = transaction.find('transactionDate/value').text
+        numShares = transaction.find('transactionAmounts/transactionShares/value').text
+        price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+
+        row = [ticker, name, securityTitle, transactionDate, numShares, price]
+        rows.append(row)
+
+    df = pd.DataFrame(rows, columns = ['ticker', 'name', 'Security Type', 'Transaction Date', 'Num Shares', 'Price'])
+
+    print(df.to_string())
+
 
 
 def handle_data(data):
