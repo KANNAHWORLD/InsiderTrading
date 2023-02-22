@@ -96,9 +96,6 @@ def XML_to_CSV(XMLFileName):
 
 
 
-def handle_data(data):
-    data.append(data.strip())
-
 if __name__ == "__main__":
     XML_to_CSV("filings/AMD/4/0000002488-23-000032.txt")
 
