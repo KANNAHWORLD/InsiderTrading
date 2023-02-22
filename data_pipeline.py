@@ -1,5 +1,7 @@
 import os
 from secedgar import CompanyFilings, FilingType
+from html.parser import HTMLParser
+from lxml import etree
 
 # this is needed to get the data
 # pip install secedgar
@@ -31,3 +33,51 @@ def SaveFilings(company, filingType = FilingType.FILING_4, user_agent='QuantProj
     filings.save(savePath)
 
     return True
+
+data = []
+
+def XML_to_CSV(XMLFileName):
+
+    # Define a list to store the data
+
+    # Open the HTML file
+    directory = os.getcwd()
+
+    html = ''
+
+    # This reads the XML file returned from EDGAR
+    with open(directory+"/filings/AMD/4/0000002488-23-000032.txt", 'r') as f:
+
+        # This first loop gets rid of the headers which we do not need
+        for line in f:
+            # Skip lines until we reach the line we're looking for
+            if not line.startswith('<XML>'):
+                continue
+
+            # Get rid of '<XML>' so we get to the actually useful stuff
+            f.readline()
+            break
+
+        # This gets the useful XML data
+        for line in f:
+            if line.startswith('</XML>'):
+                break
+            html += line
+
+    # Loading XML file into xml parser
+    root = etree.fromstring(html)
+
+    #Testing finding a specific element in the XML file
+    tag_elem = root.find('reportingOwner/reportingOwnerId/rptOwnerCik')
+    tag_text = tag_elem.text
+
+    #Printing that shit out
+    print(tag_text)  # Output: 'Some text'
+
+
+def handle_data(data):
+    data.append(data.strip())
+
+if __name__ == "__main__":
+    XML_to_CSV("filings/AMD/4/0000002488-23-000032.txt")
+
