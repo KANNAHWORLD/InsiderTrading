@@ -1,82 +1,40 @@
 import os
+import requests
 from secedgar import CompanyFilings, FilingType
 from html.parser import HTMLParser
 from lxml import etree
 import pandas as pd
 
+#### Needed for testing
+import xml.dom.minidom
+
 # this is needed to get the data
 # pip install secedgar
 # docs https://sec-edgar.github.io/sec-edgar/filings.html#secedgar.CompanyFilings
 
-
-
-# @arg company is just a company name
-# @arg filingType must be FilingType filing, allowed options https://sec-edgar.github.io/sec-edgar/filingtypes.html
-# @arg user_agent is default, but please change it to "<your name> (<email>)"
-# @arg no_filings is the amount of filings to retrieve
-# Queries the edgar database and saves onto computer file tree at this directory
-#      <proogram working directory>/filings/<company name>/<files>
-# creates the directory if it does not already exist
-# Path is not hardcoded, it is transportable to other computers
-def SaveFilings(company, filingType = FilingType.FILING_4, user_agent='QuantProj (Dumb@usc.edu)', no_filings=3):
-
-    # Requesting from EDGAR
-    filings = CompanyFilings(cik_lookup=[company], filing_type=filingType, count=no_filings, user_agent=user_agent)
-
-    # Path at which to save file
-    program_working_directory = os.getcwd()
-    savePath = program_working_directory + "/filings/"
-    # creating directory if it does not already exist
-    if not os.path.exists(savePath):
-        os.makedirs(savePath)
-
-    # Saving files to the directory
-    filings.save(savePath)
-
-    return True
-
-data = []
-
-def XML_to_CSV(XMLFileName):
-
-    # Open the HTML file
-    directory = os.getcwd()
-
-    html = ''
-
-    # This reads the XML file returned from EDGAR
-    with open(directory + '/' + XMLFileName, 'r') as f:
-
-        # This first loop gets rid of the headers which we do not need
-        for line in f:
-            # Skip lines until we reach the line we're looking for
-            if not line.startswith('<XML>'):
-                continue
-
-            # Get rid of '<XML>' so we get to the actually useful stuff
-            f.readline()
-            break
-
-        # This gets the useful XML data
-        for line in f:
-            if line.startswith('</XML>'):
-                break
-            html += line
-
-    # Loading XML file into xml parser
-    root = etree.fromstring(html)
-    
+def XML_to_CSV(root):
     #Building a 2d array
     rows = []
 
     ticker = root.find('issuer/issuerTradingSymbol').text
     name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
-    
+
     for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
         securityTitle = transaction.find('securityTitle/value').text
         transactionDate = transaction.find('transactionDate/value').text
         numShares = transaction.find('transactionAmounts/transactionShares/value').text
-        price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+
+
+
+        ############### Error given for below
+        #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+        #####    AttributeError: 'NoneType' object has no attribute 'text'
+        ### Some transactions possibly don't disclose share price?
+        ### issue, placed it under try, catch for the time being ~Sid
+        try:
+            price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+        except:
+            price = 0
 
         row = [ticker, name, securityTitle, transactionDate, numShares, price]
         rows.append(row)
@@ -85,7 +43,17 @@ def XML_to_CSV(XMLFileName):
         securityTitle = transaction.find('securityTitle/value').text
         transactionDate = transaction.find('transactionDate/value').text
         numShares = transaction.find('transactionAmounts/transactionShares/value').text
-        price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+
+
+        ############### Error given for below
+        #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+        #####    AttributeError: 'NoneType' object has no attribute 'text'
+        ### Some transactions possibly don't disclose share price?
+        ### issue, placed it under try, catch for the time being ~Sid
+        try:
+            price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+        except:
+            price = 0
 
         row = [ticker, name, securityTitle, transactionDate, numShares, price]
         rows.append(row)
@@ -95,7 +63,65 @@ def XML_to_CSV(XMLFileName):
     print(df.to_string())
 
 
+##########
+# @arg company is just a company name
+# @arg filingType must be FilingType filing, allowed options https://sec-edgar.github.io/sec-edgar/filingtypes.html
+# @arg user_agent is default, but please change it to "<your name> (<email>)"
+# @arg no_filings is the amount of filings to retrieve
+##########
+# Returns a list of XML objects which can be parsed
+def get_filings_XML(company, filingType = FilingType.FILING_4, user_agent='QuantProj (Dumb@usc.edu)', no_filings=3):
 
-if __name__ == "__main__":
-    XML_to_CSV("filings/AMD/4/0000002488-23-000032.txt")
+    ##### Getting all of the URLS to query Edgar
+    filings = CompanyFilings(cik_lookup=[company], filing_type=filingType, count=no_filings, user_agent=user_agent)
+    urls = filings.get_urls()
+
+    #### Getting ticker
+    company_ticker = list(urls.keys())[0]
+    xml_return_docs = []
+
+    #### Header
+    UAHeader = { "User-Agent": user_agent}
+
+    #### Querying all of the links and obtaining all of the XML
+    for x in urls[company_ticker]:
+
+        #### Getting document from the EDGAR database
+        response = requests.get(x, headers=UAHeader)
+        array = response.text.split("\n")
+
+        #### Skipping through the array until we find the XML section
+        i = 1
+        for line in array:
+
+            #### Skipping useless information
+            if not line.startswith('<XML>'):
+                i += 1
+                continue
+
+            break
+
+        #### This gets the useful XML data to be later parsed
+        html = ''
+        while True:
+            if array[i].startswith('</XML>'):
+                break
+            html += array[i]
+            html += '\n'
+            i += 1
+
+        ############# For printing the XML generated during dev
+        # append XML document to return array
+        # temp = xml.dom.minidom.parseString(html)
+        # new_xml = temp.toprettyxml()
+        # print(new_xml)
+
+        #### Adding all of the XML documents to the XML list
+        root = etree.fromstring(html)
+        xml_return_docs.append(root)
+
+    # print(xml_return_docs)
+    return xml_return_docs
+
+
 
