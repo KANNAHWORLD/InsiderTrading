@@ -5,3 +5,5 @@ lib/**
 pyvenv.cfg
 filings/**
 **/.DS_Store
+xml.txt
+legacy.py

@@ -1,9 +1,0 @@
-/Users/siddharthbansal/opt/anaconda3/lib/python3.9/site-packages/bs4/builder/__init__.py:545: XMLParsedAsHTMLWarning: It looks like you're parsing an XML document using an HTML parser. If this really is an HTML document (maybe it's XHTML?), you can ignore or filter this warning. If it's XML, you should know that using an XML parser will be more reliable. To parse this document as XML, make sure you have the lxml package installed, and pass the keyword argument `features="xml"` into the BeautifulSoup constructor.
-  warnings.warn(
-Traceback (most recent call last):
-  File "/Users/siddharthbansal/Desktop/quantProj/venv/data_pipeline.py", line 108, in <module>
-    array = get_filings_XML("AAPL")
-  File "/Users/siddharthbansal/Desktop/quantProj/venv/data_pipeline.py", line 101, in get_filings_XML
-    print(etree.tostring(root, pretty_print=True).decode())
-  File "src/lxml/etree.pyx", line 3462, in lxml.etree.tostring
-TypeError: Type 'list' cannot be serialized.

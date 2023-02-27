@@ -6,7 +6,7 @@ from lxml import etree
 import pandas as pd
 
 #### Needed for testing
-import xml.dom.minidom
+# import xml.dom.minidom
 
 # this is needed to get the data
 # pip install secedgar
