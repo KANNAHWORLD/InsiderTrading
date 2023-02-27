@@ -34,7 +34,7 @@ def XML_to_CSV(root):
         try:
             price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
         except:
-            price = 0
+            price = -1
 
         row = [ticker, name, securityTitle, transactionDate, numShares, price]
         rows.append(row)
@@ -53,7 +53,7 @@ def XML_to_CSV(root):
         try:
             price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
         except:
-            price = 0
+            price = -1
 
         row = [ticker, name, securityTitle, transactionDate, numShares, price]
         rows.append(row)
