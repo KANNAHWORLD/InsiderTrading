@@ -1,6 +1,7 @@
 import data_pipeline as d_pipeline
 from secedgar import FilingType
 import pandas as pd
+import time as t
 
 test = True
 
@@ -21,11 +22,17 @@ def get_CSV_Filing4(companies: list[str]):
             dataFrame = pd.concat([dataFrame, df], ignore_index=True)
         dictionary[company] = dataFrame
 
+        # Needed to prevent Querying the EDGAR database too frequently and
+        # causing a lockout from API
+        t.sleep(.5)
+
     return dictionary
 
 
 if __name__ == "__main__":
     dictionary = get_CSV_Filing4(["AMD", "AAPL", "GOOGL"])
-    print(dictionary)
+    for x in dictionary:
+        print(dictionary[x])
+    # print(dictionary)
 
 
