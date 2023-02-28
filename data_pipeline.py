@@ -12,7 +12,12 @@ import pandas as pd
 # pip install secedgar
 # docs https://sec-edgar.github.io/sec-edgar/filings.html#secedgar.CompanyFilings
 
-def XML_to_CSV(root):
+
+##########
+# @arg root is an etree object containing XML
+##########
+# Returns a Pandas dataframe which can be use later to convert to CSV
+def XML_CSV_Filing4(root):
     #Building a 2d array
     rows = []
 
@@ -59,8 +64,9 @@ def XML_to_CSV(root):
         rows.append(row)
 
     df = pd.DataFrame(rows, columns = ['ticker', 'name', 'Security Type', 'Transaction Date', 'Num Shares', 'Price'])
+    # print(df.to_string())
+    return df
 
-    print(df.to_string())
 
 
 ##########
