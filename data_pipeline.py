@@ -46,17 +46,23 @@ def XML_CSV_Filing4(xmlList):
     for root in xmlList:
         ticker = root.find('issuer/issuerTradingSymbol').text
         name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
+        title = root.find('reportingOwner/reportingOwnerRelationship/officerTitle').text
+        isDirector = root.find('reportingOwner/reportingOwnerRelationship/isDirector').text
+        isOfficer = root.find('reportingOwner/reportingOwnerRelationship/isOfficer').text
+        isTenPercentOwner = root.find('reportingOwner/reportingOwnerRelationship/isTenPercentOwner').text
+
+        personalInfo = [name, title, isDirector, isOfficer, isTenPercentOwner]
 
         for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
-            row = getFieldsFromTxn(transaction, name)
+            row = getFieldsFromTxn(transaction, personalInfo)
             rows.append(row)
 
         for transaction in root.findall('derivativeTable/derivativeTransaction'):
-            row = getFieldsFromTxn(transaction, name)
+            row = getFieldsFromTxn(transaction, personalInfo)
             rows.append(row)
     
 
-    df = pd.DataFrame(rows, columns = ['Name', 'Security Type', 'Txn Type', 'Txn Date', 'Num Shares', 'Price'])
+    df = pd.DataFrame(rows, columns = ['Name', 'Title', 'isDirector', 'isOfficer', 'isTenPercentOwner', 'Security Type', 'Txn Type', 'Txn Date', 'Num Shares', 'Price'])
     df.index.name = "Row #"
     
     # save as a CSV
@@ -67,10 +73,10 @@ def XML_CSV_Filing4(xmlList):
 
 ##########
 # @arg transaction is the xml node for each transaction
-# @arg name is the name of the person filing
+# @arg personalInfo is list of information about filing person - name, title, isDirector, isOfficer, isTenPercentOwner
 ##########
 # Returns a list of transaction information to be used as a row in a dataframe
-def getFieldsFromTxn(transaction, name):
+def getFieldsFromTxn(transaction, personalInfo):
     securityTitle = transaction.find('securityTitle/value').text
     transactionDate = transaction.find('transactionDate/value').text
     numShares = transaction.find('transactionAmounts/transactionShares/value').text
@@ -88,7 +94,7 @@ def getFieldsFromTxn(transaction, name):
     
     txnType = txnCodeDescriptions[txnCode]
 
-    row = [name, securityTitle, txnType, transactionDate, numShares, price]
+    row = personalInfo + [securityTitle, txnType, transactionDate, numShares, price]
 
     return row
 
@@ -184,6 +190,7 @@ def get_filings_from_file(XMLFileName):
     return [root]
 
 if __name__ == "__main__":
-    xmlList = get_filings_from_file("filings/AMD/4/0000002488-23-000032.txt")
+    # xmlList = get_filings_from_file("filings/AMD/4/0000002488-23-000032.txt")
+    xmlList = get_filings_XML("AAPL")
     df = XML_CSV_Filing4(xmlList)
 
