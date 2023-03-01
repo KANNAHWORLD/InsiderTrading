@@ -14,57 +14,59 @@ import pandas as pd
 
 
 ##########
-# @arg root is an etree object containing XML
+# @arg xmlList is a list of etree objects containing XML
 ##########
 # Returns a Pandas dataframe which can be use later to convert to CSV
-def XML_CSV_Filing4(root):
+def XML_CSV_Filing4(xmlList):
     #Building a 2d array
     rows = []
 
-    ticker = root.find('issuer/issuerTradingSymbol').text
-    name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
+    for root in xmlList:
+        ticker = root.find('issuer/issuerTradingSymbol').text
+        name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
 
-    for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
-        securityTitle = transaction.find('securityTitle/value').text
-        transactionDate = transaction.find('transactionDate/value').text
-        numShares = transaction.find('transactionAmounts/transactionShares/value').text
+        for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
+            securityTitle = transaction.find('securityTitle/value').text
+            transactionDate = transaction.find('transactionDate/value').text
+            numShares = transaction.find('transactionAmounts/transactionShares/value').text
 
 
+            ############### Error given for below
+            #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+            #####    AttributeError: 'NoneType' object has no attribute 'text'
+            ### Some transactions possibly don't disclose share price?
+            ### issue, placed it under try, catch for the time being ~Sid
+            try:
+                price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+            except:
+                price = -1
 
-        ############### Error given for below
-        #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
-        #####    AttributeError: 'NoneType' object has no attribute 'text'
-        ### Some transactions possibly don't disclose share price?
-        ### issue, placed it under try, catch for the time being ~Sid
-        try:
-            price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
-        except:
-            price = -1
+            row = [ticker, name, securityTitle, transactionDate, numShares, price]
+            rows.append(row)
+
+        for transaction in root.findall('derivativeTable/derivativeTransaction'):
+            securityTitle = transaction.find('securityTitle/value').text
+            transactionDate = transaction.find('transactionDate/value').text
+            numShares = transaction.find('transactionAmounts/transactionShares/value').text
+
+
+            ############### Error given for below
+            #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+            #####    AttributeError: 'NoneType' object has no attribute 'text'
+            ### Some transactions possibly don't disclose share price?
+            ### issue, placed it under try, catch for the time being ~Sid
+            try:
+                price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+            except:
+                price = -1
 
         row = [ticker, name, securityTitle, transactionDate, numShares, price]
         rows.append(row)
-
-    for transaction in root.findall('derivativeTable/derivativeTransaction'):
-        securityTitle = transaction.find('securityTitle/value').text
-        transactionDate = transaction.find('transactionDate/value').text
-        numShares = transaction.find('transactionAmounts/transactionShares/value').text
-
-
-        ############### Error given for below
-        #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
-        #####    AttributeError: 'NoneType' object has no attribute 'text'
-        ### Some transactions possibly don't disclose share price?
-        ### issue, placed it under try, catch for the time being ~Sid
-        try:
-            price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
-        except:
-            price = -1
-
-        row = [ticker, name, securityTitle, transactionDate, numShares, price]
-        rows.append(row)
+    
 
     df = pd.DataFrame(rows, columns = ['ticker', 'name', 'Security Type', 'Transaction Date', 'Num Shares', 'Price'])
-    # print(df.to_string())
+    # df.to_csv()
+    print(df)
     return df
 
 
@@ -130,4 +132,7 @@ def get_filings_XML(company, filingType = FilingType.FILING_4, user_agent='Quant
     return xml_return_docs
 
 
+if __name__ == "__main__":
+    xmlList = get_filings_XML("AAPL")
+    df = XML_CSV_Filing4(xmlList)
 
