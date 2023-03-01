@@ -47,58 +47,50 @@ def XML_CSV_Filing4(xmlList):
         ticker = root.find('issuer/issuerTradingSymbol').text
         name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
 
-        #TODO: probably should abstract this out to a method vs copy pasting for derivatives & non derivatives
         for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
-            securityTitle = transaction.find('securityTitle/value').text
-            transactionDate = transaction.find('transactionDate/value').text
-            numShares = transaction.find('transactionAmounts/transactionShares/value').text
-            txnCode = transaction.find('transactionCoding/transactionCode').text
-
-            ############### Error given for below
-            #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
-            #####    AttributeError: 'NoneType' object has no attribute 'text'
-            ### Some transactions possibly don't disclose share price?
-            ### issue, placed it under try, catch for the time being ~Sid
-            try:
-                price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
-            except:
-                price = -1
-
-
-            txnType = txnCodeDescriptions[txnCode]
-            row = [ticker, name, securityTitle, txnType, transactionDate, numShares, price]
+            row = getFieldsFromTxn(transaction, name)
             rows.append(row)
 
         for transaction in root.findall('derivativeTable/derivativeTransaction'):
-            securityTitle = transaction.find('securityTitle/value').text
-            transactionDate = transaction.find('transactionDate/value').text
-            numShares = transaction.find('transactionAmounts/transactionShares/value').text
-            txnCode = transaction.find('transactionCoding/transactionCode').text
-
-            ############### Error given for below
-            #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
-            #####    AttributeError: 'NoneType' object has no attribute 'text'
-            ### Some transactions possibly don't disclose share price?
-            ### issue, placed it under try, catch for the time being ~Sid
-            try:
-                price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
-            except:
-                price = -1
-            
-            txnType = txnCodeDescriptions[txnCode]
-
-        row = [ticker, name, securityTitle, txnType, transactionDate, numShares, price]
-        rows.append(row)
+            row = getFieldsFromTxn(transaction, name)
+            rows.append(row)
     
 
-    df = pd.DataFrame(rows, columns = ['Ticker', 'Name', 'Security Type', 'Txn Type', 'Txn Date', 'Num Shares', 'Price'])
-    df.index.name = "Row Num"
+    df = pd.DataFrame(rows, columns = ['Name', 'Security Type', 'Txn Type', 'Txn Date', 'Num Shares', 'Price'])
+    df.index.name = "Row #"
+    
+    # save as a CSV
     os.makedirs('data', exist_ok=True)  
-    df.to_csv('data/out.csv')  
+    df.to_csv('data/'+ ticker + '.csv')  
     # print(df)
     return df
 
+##########
+# @arg transaction is the xml node for each transaction
+# @arg name is the name of the person filing
+##########
+# Returns a list of transaction information to be used as a row in a dataframe
+def getFieldsFromTxn(transaction, name):
+    securityTitle = transaction.find('securityTitle/value').text
+    transactionDate = transaction.find('transactionDate/value').text
+    numShares = transaction.find('transactionAmounts/transactionShares/value').text
+    txnCode = transaction.find('transactionCoding/transactionCode').text
 
+    ############### Error given for below
+    #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+    #####    AttributeError: 'NoneType' object has no attribute 'text'
+    ### Some transactions possibly don't disclose share price?
+    ### issue, placed it under try, catch for the time being ~Sid
+    try:
+        price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
+    except:
+        price = -1
+    
+    txnType = txnCodeDescriptions[txnCode]
+
+    row = [name, securityTitle, txnType, transactionDate, numShares, price]
+
+    return row
 
 ##########
 # @arg company is just a company name
@@ -192,6 +184,6 @@ def get_filings_from_file(XMLFileName):
     return [root]
 
 if __name__ == "__main__":
-    xmlList = get_filings_from_file(("filings/AMD/4/0000002488-23-000032.txt"))
+    xmlList = get_filings_from_file("filings/AMD/4/0000002488-23-000032.txt")
     df = XML_CSV_Filing4(xmlList)
 
