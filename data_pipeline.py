@@ -12,6 +12,28 @@ import pandas as pd
 # pip install secedgar
 # docs https://sec-edgar.github.io/sec-edgar/filings.html#secedgar.CompanyFilings
 
+# define transaction code variable from https://www.sec.gov/about/forms/form4data.pdf page 5
+
+#TODO: List INCOMPLETE, also tried to summarize the ones I understood
+#TODO: should we worry about runtime? idk if there are faster python data structures
+txnCodeDescriptions = {
+"P": "Purchase (open market or private)",
+"S": "Sale (open market or private)",
+"V": "Voluntarily reported earlier than required",   
+"A": "Grant/award",
+"D": "Sale (back to company)",
+"F": "Payment of exercise price or tax liability using portion of securities received from the company",
+"I": "Acquisition/disposion of issuer securities",
+"M": "Exercise/conversion of derivative",
+"C": "Conversion of derivative",
+"E": "Expiration of short derivative",
+"H": "Expiration of long derivative",
+"O": "Exercise of out-of-the-money derivative",
+"X" : "Exercise of in-the-money or at-the-money derivative security",
+"K": "Equity swap/hedging txn"
+}
+
+#TODO - possible that it's not just one character - could be "S/K" - handle that
 
 ##########
 # @arg xmlList is a list of etree objects containing XML
@@ -25,11 +47,12 @@ def XML_CSV_Filing4(xmlList):
         ticker = root.find('issuer/issuerTradingSymbol').text
         name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
 
+        #TODO: probably should abstract this out to a method vs copy pasting for derivatives & non derivatives
         for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
             securityTitle = transaction.find('securityTitle/value').text
             transactionDate = transaction.find('transactionDate/value').text
             numShares = transaction.find('transactionAmounts/transactionShares/value').text
-
+            txnCode = transaction.find('transactionCoding/transactionCode').text
 
             ############### Error given for below
             #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
@@ -41,14 +64,16 @@ def XML_CSV_Filing4(xmlList):
             except:
                 price = -1
 
-            row = [ticker, name, securityTitle, transactionDate, numShares, price]
+
+            txnType = txnCodeDescriptions[txnCode]
+            row = [ticker, name, securityTitle, txnType, transactionDate, numShares, price]
             rows.append(row)
 
         for transaction in root.findall('derivativeTable/derivativeTransaction'):
             securityTitle = transaction.find('securityTitle/value').text
             transactionDate = transaction.find('transactionDate/value').text
             numShares = transaction.find('transactionAmounts/transactionShares/value').text
-
+            txnCode = transaction.find('transactionCoding/transactionCode').text
 
             ############### Error given for below
             #####  price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
@@ -59,14 +84,18 @@ def XML_CSV_Filing4(xmlList):
                 price = transaction.find('transactionAmounts/transactionPricePerShare/value').text
             except:
                 price = -1
+            
+            txnType = txnCodeDescriptions[txnCode]
 
-        row = [ticker, name, securityTitle, transactionDate, numShares, price]
+        row = [ticker, name, securityTitle, txnType, transactionDate, numShares, price]
         rows.append(row)
     
 
-    df = pd.DataFrame(rows, columns = ['ticker', 'name', 'Security Type', 'Transaction Date', 'Num Shares', 'Price'])
-    # df.to_csv()
-    print(df)
+    df = pd.DataFrame(rows, columns = ['Ticker', 'Name', 'Security Type', 'Txn Type', 'Txn Date', 'Num Shares', 'Price'])
+    df.index.name = "Row Num"
+    os.makedirs('data', exist_ok=True)  
+    df.to_csv('data/out.csv')  
+    # print(df)
     return df
 
 
@@ -131,8 +160,38 @@ def get_filings_XML(company, filingType = FilingType.FILING_4, user_agent='Quant
     # print(xml_return_docs)
     return xml_return_docs
 
+#for testing - read from one file
+def get_filings_from_file(XMLFileName):
+
+    # Open the HTML file
+    directory = os.getcwd()
+
+    html = ''
+
+    # This reads the XML file returned from EDGAR
+    with open(directory + '/' + XMLFileName, 'r') as f:
+
+        # This first loop gets rid of the headers which we do not need
+        for line in f:
+            # Skip lines until we reach the line we're looking for
+            if not line.startswith('<XML>'):
+                continue
+
+            # Get rid of '<XML>' so we get to the actually useful stuff
+            f.readline()
+            break
+
+        # This gets the useful XML data
+        for line in f:
+            if line.startswith('</XML>'):
+                break
+            html += line
+
+    # Loading XML file into xml parser
+    root = etree.fromstring(html)
+    return [root]
 
 if __name__ == "__main__":
-    xmlList = get_filings_XML("AAPL")
+    xmlList = get_filings_from_file(("filings/AMD/4/0000002488-23-000032.txt"))
     df = XML_CSV_Filing4(xmlList)
 

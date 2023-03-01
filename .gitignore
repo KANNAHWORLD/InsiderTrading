@@ -7,3 +7,4 @@ filings/**
 **/.DS_Store
 xml.txt
 legacy.py
+data/**
