@@ -1,5 +1,4 @@
 import data_pipeline as d_pipeline
-from secedgar import FilingType
 import pandas as pd
 import time as t
 
@@ -15,17 +14,14 @@ def get_CSV_Filing4(companies: list[str]):
     dictionary = {}
 
     for company in companies:
-        XML = d_pipeline.get_filings_XML(company, no_filings=200)
-        df = d_pipeline.XML_CSV_Filing4(XML)
-
-        # Needed to prevent Querying the EDGAR database too frequently and
-        # causing a lockout from API
-        t.sleep(.1)
+        XML = d_pipeline.get_filings_XML(company, no_filings=12000)
+        d_pipeline.XML_CSV_Filing4(XML)
 
     return dictionary
 
 
 if __name__ == "__main__":
-    get_CSV_Filing4(["AAPL"])
+
+    get_CSV_Filing4(["AAPL", "AMD", "NVDA", "TSLA", "INTC", "GOOGL", "AMZN"])
 
 

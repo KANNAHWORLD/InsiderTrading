@@ -4,6 +4,7 @@ from secedgar import CompanyFilings, FilingType
 from html.parser import HTMLParser
 from lxml import etree
 import pandas as pd
+import time
 
 #### Needed for testing
 # import xml.dom.minidom
@@ -41,33 +42,42 @@ txnCodeDescriptions = {
 # Returns a Pandas dataframe which can be use later to convert to CSV
 def XML_CSV_Filing4(xmlList):
     #Building a 2d array
-    rows = []
+    df = None
+    try:
+        rows = []
+        ticker = "NULL"
+        for root in xmlList:
 
-    for root in xmlList:
-        ticker = root.find('issuer/issuerTradingSymbol').text
-        name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
-        title = root.find('reportingOwner/reportingOwnerRelationship/officerTitle').text
-        isDirector = root.find('reportingOwner/reportingOwnerRelationship/isDirector').text
-        isOfficer = root.find('reportingOwner/reportingOwnerRelationship/isOfficer').text
-        isTenPercentOwner = root.find('reportingOwner/reportingOwnerRelationship/isTenPercentOwner').text
+            ticker = root.find('issuer/issuerTradingSymbol').text
+            name = root.find('reportingOwner/reportingOwnerId/rptOwnerName').text
+            title = root.find('reportingOwner/reportingOwnerRelationship/officerTitle').text
+            isDirector = root.find('reportingOwner/reportingOwnerRelationship/isDirector').text
+            isOfficer = root.find('reportingOwner/reportingOwnerRelationship/isOfficer').text
+            isTenPercentOwner = root.find('reportingOwner/reportingOwnerRelationship/isTenPercentOwner').text
 
-        personalInfo = [name, title, isDirector, isOfficer, isTenPercentOwner]
+            personalInfo = [name, title, isDirector, isOfficer, isTenPercentOwner]
 
-        for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
-            row = getFieldsFromTxn(transaction, personalInfo)
-            rows.append(row)
+            for transaction in root.findall('nonDerivativeTable/nonDerivativeTransaction'):
+                row = getFieldsFromTxn(transaction, personalInfo)
+                rows.append(row)
 
-        for transaction in root.findall('derivativeTable/derivativeTransaction'):
-            row = getFieldsFromTxn(transaction, personalInfo)
-            rows.append(row)
-    
+            for transaction in root.findall('derivativeTable/derivativeTransaction'):
+                row = getFieldsFromTxn(transaction, personalInfo)
+                rows.append(row)
+        
 
-    df = pd.DataFrame(rows, columns = ['Name', 'Title', 'isDirector', 'isOfficer', 'isTenPercentOwner', 'Security Type', 'Txn Type', 'Txn Date', 'Num Shares', 'Price'])
-    df.index.name = "Row #"
-    
-    # save as a CSV
-    os.makedirs('data', exist_ok=True)  
-    df.to_csv('data/'+ ticker + '.csv')  
+        df = pd.DataFrame(rows, columns = ['Name', 'Title', 'isDirector', 'isOfficer', 'isTenPercentOwner', 'Security Type', 'Txn Type', 'Txn Date', 'Num Shares', 'Price'])
+        df.index.name = "Row #"
+        
+        # save as a CSV
+        os.makedirs('data', exist_ok=True)  
+        df.to_csv('data/'+ ticker + '.csv')
+    # In case an error occurs export the data right away    
+    except:
+        if df == None:
+            return
+        os.makedirs('data', exist_ok=True)  
+        df.to_csv('data/'+ ticker + '.csv')
     # print(df)
     return df
 
@@ -126,10 +136,14 @@ def get_filings_XML(company, filingType = FilingType.FILING_4, user_agent='Quant
     UAHeader = { "User-Agent": user_agent}
 
     #### Querying all of the links and obtaining all of the XML
+    j = 0
     for x in urls[company_ticker]:
 
         #### Getting document from the EDGAR database
         response = requests.get(x, headers=UAHeader)
+
+        #### Sleeping to not overload API request Limit
+        time.sleep(.125)
         array = response.text.split("\n")
 
         #### Skipping through the array until we find the XML section
@@ -145,11 +159,12 @@ def get_filings_XML(company, filingType = FilingType.FILING_4, user_agent='Quant
 
         #### This gets the useful XML data to be later parsed
         html = ''
-        while True:
+        while True and i < len(array):
             if array[i].startswith('</XML>'):
                 break
             html += array[i]
             html += '\n'
+            #print(html)
             i += 1
 
         ############# For printing the XML generated during dev
@@ -157,10 +172,19 @@ def get_filings_XML(company, filingType = FilingType.FILING_4, user_agent='Quant
         # temp = xml.dom.minidom.parseString(html)
         # new_xml = temp.toprettyxml()
         # print(new_xml)
+        j+=1
+
+        if j%100 == 0:
+            print(f"Currently on File {j}")
 
         #### Adding all of the XML documents to the XML list
-        root = etree.fromstring(html)
-        xml_return_docs.append(root)
+        try:
+            root = etree.fromstring(html)
+            xml_return_docs.append(root)
+        except:
+            print("There was an error converting to an XML object, possible file error")
+            print(f"Currently on file {j}")
+            continue
 
     # print(xml_return_docs)
     return xml_return_docs
