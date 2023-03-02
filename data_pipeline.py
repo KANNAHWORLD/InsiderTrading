@@ -92,8 +92,15 @@ def getFieldsFromTxn(transaction, personalInfo):
     except:
         price = -1
     
-    txnType = txnCodeDescriptions[txnCode]
-
+    try: 
+        txnType = txnCodeDescriptions[txnCode]
+    except:
+        # if "P/K" or "S/K"
+        if(txnCode[0] == "P" or txnCode[0] == "S"): 
+            txnType = txnCodeDescriptions[txnCode]
+        else: 
+            txnType = "Other"
+        
     row = personalInfo + [securityTitle, txnType, transactionDate, numShares, price]
 
     return row
@@ -191,6 +198,6 @@ def get_filings_from_file(XMLFileName):
 
 if __name__ == "__main__":
     # xmlList = get_filings_from_file("filings/AMD/4/0000002488-23-000032.txt")
-    xmlList = get_filings_XML("AAPL")
+    xmlList = get_filings_XML("AAPL",no_filings=30)
     df = XML_CSV_Filing4(xmlList)
 

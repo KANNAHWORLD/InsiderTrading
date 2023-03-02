@@ -15,24 +15,17 @@ def get_CSV_Filing4(companies: list[str]):
     dictionary = {}
 
     for company in companies:
-        XML = d_pipeline.get_filings_XML(company)
-        dataFrame = pd.DataFrame()
-        for x in XML:
-            df = d_pipeline.XML_CSV_Filing4(x)
-            dataFrame = pd.concat([dataFrame, df], ignore_index=True)
-        dictionary[company] = dataFrame
+        XML = d_pipeline.get_filings_XML(company, no_filings=200)
+        df = d_pipeline.XML_CSV_Filing4(XML)
 
         # Needed to prevent Querying the EDGAR database too frequently and
         # causing a lockout from API
-        t.sleep(.5)
+        t.sleep(.1)
 
     return dictionary
 
 
 if __name__ == "__main__":
-    dictionary = get_CSV_Filing4(["AMD", "AAPL", "GOOGL"])
-    for x in dictionary:
-        print(dictionary[x])
-    # print(dictionary)
+    get_CSV_Filing4(["AAPL"])
 
 
